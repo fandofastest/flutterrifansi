@@ -1,0 +1,43 @@
+
+import 'dart:async';
+
+import 'package:get/get.dart';
+import 'package:get/get_connect/http/src/status/http_status.dart';
+import '../constants/api_constants.dart';
+
+class ApiService extends GetConnect {
+  @override
+  void onInit() {
+    httpClient.baseUrl = ApiConstants.baseUrl;
+    httpClient.timeout = const Duration(seconds: 60); // Increased to 60 seconds
+    httpClient.addRequestModifier<dynamic>((request) {
+      print('Sending request to: ${request.url}');
+      return request;
+    });
+    super.onInit();
+  }
+
+  Future<Response> login(String username, String password) async {
+    try {
+      final response = await post(
+        ApiConstants.login,
+        {
+          'username': username,
+          'password': password,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 45)); // Specific timeout for login
+      return response;
+    } catch (e) {
+            print('Sending request to: ${e}');
+
+      // Handle timeout specifically
+      if (e is TimeoutException) {
+        return Response(statusCode: HttpStatus.requestTimeout, statusText: 'Request Timeout');
+      }
+      return Response(statusCode: HttpStatus.internalServerError, statusText: e.toString());
+    }
+  }
+}
