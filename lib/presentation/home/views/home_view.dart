@@ -155,6 +155,7 @@ class HomeView extends StatelessWidget {
           color: Colors.white,
         ),
       ),
+   
     );
   }
 }

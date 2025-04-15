@@ -240,6 +240,7 @@ class ProgressDetailDialog extends StatelessWidget {
 
   Widget _buildImageRow(String label, String imagePath) {
     final fullImageUrl = '${ApiConstants.mainurl}$imagePath';
+    print('Full Image URL: $fullImageUrl');
     
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),

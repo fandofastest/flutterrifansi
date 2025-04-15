@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutterrifansi/core/services/biometric_service.dart';
 import 'package:flutterrifansi/presentation/home/controllers/home_controller.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -8,6 +9,37 @@ import '../../../core/services/api_service.dart';
 import '../../../data/models/user_model.dart';
 
 class AuthController extends GetxController {
+  final BiometricService _biometricService = BiometricService();
+  
+  Future<void> authenticateWithBiometrics() async {
+    try {
+      final isAvailable = await _biometricService.isBiometricAvailable();
+      if (!isAvailable) {
+        Get.snackbar('Error', 'Biometric authentication not available');
+        return;
+      }
+
+      final isAuthenticated = await _biometricService.authenticate();
+      if (isAuthenticated) {
+        // Load user data and token from storage
+        final userData = _storage.read('user_data');
+        final token = _storage.read('token');
+        
+        if (userData != null && token != null) {
+          user.value = UserModel.fromJson(json.decode(userData));
+          // Navigate to home if authentication is successful
+          Get.offAllNamed('/home');
+        } else {
+          Get.snackbar('Error', 'User data not found');
+        }
+      } else {
+        Get.snackbar('Error', 'Biometric authentication failed');
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Authentication error');
+    }
+  }
+  
   late final ApiService _apiService;
   final GetStorage _storage = GetStorage();
 
