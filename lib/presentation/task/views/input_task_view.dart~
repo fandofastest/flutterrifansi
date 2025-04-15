@@ -13,9 +13,6 @@ import 'package:get_storage/get_storage.dart';
 import 'steps/resources_step.dart';
 import 'steps/material_step.dart';
 import 'steps/summary_step.dart';
-import 'package:intl/intl.dart';
-import 'package:image_picker/image_picker.dart';
-import 'steps/photo_location_step.dart';
 
 class InputTaskView extends StatefulWidget {
   InputTaskView({super.key});
@@ -32,13 +29,6 @@ class _InputTaskViewState extends State<InputTaskView> {
   int activeStep = 0;
   bool _isLoading = true; // Add this line
 
-  // Photo & Location variables
-  DateTime? _dcuTime;
-  DateTime? _startTime;
-  DateTime? _endTime;
-  String? _dcuImagePath;
-  String? _startImagePath;
-  String? _endImagePath;
   List<Map<String, dynamic>> _spkList = [];
   bool _isLoadingSpk = false;
   Map<String, dynamic>? _selectedSpkDetails;
@@ -181,8 +171,9 @@ class _InputTaskViewState extends State<InputTaskView> {
         itemCostDetails: {
           'id': item['manpower'].id,
           'nama': item['manpower'].nama,
-          'category': item['manpower'].kategori, // Use optional chaining and provide default value
+          'categoryId': item['manpower'].categoryId, // Changed from category to categoryId
           'costPerHour': item['manpower'].costPerHour,
+          'description': item['manpower'].description,
         },
       )),
       // Equipment costs
@@ -200,8 +191,9 @@ class _InputTaskViewState extends State<InputTaskView> {
         itemCostDetails: {
           'id': item['equipment'].id,
           'nama': item['equipment'].nama,
-          'category': item['equipment'].kategori, // Use optional chaining and provide default value
+          'categoryId': item['equipment'].categoryId, // Changed from category to categoryId
           'costPerHour': item['equipment'].costPerHour,
+          'description': item['equipment'].description,
         },
       )),
       // Material costs
@@ -216,8 +208,12 @@ class _InputTaskViewState extends State<InputTaskView> {
         itemCostDetails: {
           'id': item['material'].id,
           'nama': item['material'].nama,
-          'category': item['material'].kategori, // Use optional chaining and provide default value
-        
+          'categoryId': item['material'].categoryId, // Changed from category to categoryId
+          'description': item['material'].description,
+          'materialDetails': {
+            'pricePerUnit': item['material'].materialDetails?.pricePerUnit ?? 0,
+            'unit': item['material'].materialDetails?.unit ?? '',
+          },
         },
       )),
       // Security costs
@@ -232,7 +228,8 @@ class _InputTaskViewState extends State<InputTaskView> {
         itemCostDetails: {
           'id': item['security'].id,
           'nama': item['security'].nama,
-          'category': item['security'].kategori, // Use optional chaining and provide default value
+          'categoryId': item['security'].categoryId, // Changed from category to categoryId
+          'description': item['security'].description,
           'securityDetails': {
             'dailyCost': item['security'].securityDetails?.dailyCost ?? 0,
           },
@@ -244,14 +241,14 @@ class _InputTaskViewState extends State<InputTaskView> {
       spk: _selectedSpkDetails?['_id'] ?? '',
       progressDate: DateTime.now(),
       timeDetails: TimeDetails(
-        startTime: _startTime ?? DateTime.now(),
-        endTime: _endTime ?? DateTime.now(),
-        dcuTime: _dcuTime ?? DateTime.now(),
+        startTime: DateTime.now(), // Replace with actual start time
+        endTime: DateTime.now(), // Replace with actual end time
+        dcuTime: DateTime.now(), // Replace with actual DCU time
       ),
       images: Images(
-        startImage: _startImagePath ?? '',
-        endImage: _endImagePath ?? '',
-        dcuImage: _dcuImagePath ?? '',
+        startImage: '', // Replace with actual image paths
+        endImage: '',
+        dcuImage: '',
       ),
       costUsed: costUsedList,
     );
@@ -274,32 +271,6 @@ class _InputTaskViewState extends State<InputTaskView> {
           setState(() {
             _selectedSpkDetails = spkData;
             _selectedSpk = spkData['spkNo'];
-          });
-        }
-
-        // Load time details
-        if (data['timeDetails'] != null) {
-          final timeDetails = data['timeDetails'];
-          setState(() {
-            _dcuTime = timeDetails['dcuTime'] != null 
-                ? DateTime.parse(timeDetails['dcuTime']) 
-                : DateTime.now();
-            _startTime = timeDetails['startTime'] != null 
-                ? DateTime.parse(timeDetails['startTime']) 
-                : DateTime.now();
-            _endTime = timeDetails['endTime'] != null 
-                ? DateTime.parse(timeDetails['endTime']) 
-                : DateTime.now();
-          });
-        }
-
-        // Load image paths
-        if (data['images'] != null) {
-          final images = data['images'];
-          setState(() {
-            _dcuImagePath = images['dcuImage'];
-            _startImagePath = images['startImage'];
-            _endImagePath = images['endImage'];
           });
         }
 
@@ -553,7 +524,6 @@ class _InputTaskViewState extends State<InputTaskView> {
 
   final List<String> stepSubTitles = [
     'Pilih SPK',
-    'Foto & Lokasi',
     'Man Power',
     'Equipment',
     'Resources',
@@ -563,7 +533,6 @@ class _InputTaskViewState extends State<InputTaskView> {
     'Next',
   ];
   final List<String> stepTitles = [
-    'Input Cost',
     'Input Cost',
     'Input Cost',
     'Input Cost',
@@ -675,64 +644,28 @@ class _InputTaskViewState extends State<InputTaskView> {
     );
   }
 
- Widget _buildStepContent() {
+  Widget _buildStepContent() {
     switch (activeStep) {
       case 0:
         return _buildStep1();
       case 1:
-        return _buildPhotoLocationStep(); // Photo & Location step
+        return _buildStep2();
       case 2:
-        return _buildStep2(); // Manpower step
+        return _buildStep3();
       case 3:
-        return _buildStep3(); // Equipment step
+        return _buildStep4();
       case 4:
-        return _buildStep4(); // Resources step
+        return _buildStep5();
       case 5:
-        return _buildStep5(); // Material step
+        return _buildStep6();
       case 6:
-        return _buildStep6(); // Security step
+        return _buildStep7();
       case 7:
-        return _buildStep7(); // Summary step
-      case 8:
-        return _buildStep8(); // Next step
+        return _buildStep8();
       default:
         return Container();
     }
   }
-
-  // Add the photo location step
-  Widget _buildPhotoLocationStep() => PhotoLocationStep(
-    dcuTime: _dcuTime ?? DateTime.now(),
-    startTime: _startTime ?? DateTime.now(),
-    endTime: _endTime ?? DateTime.now(),
-    dcuImagePath: _dcuImagePath,
-    startImagePath: _startImagePath,
-    endImagePath: _endImagePath,
-    onDcuTimeChanged: (time) {
-      setState(() => _dcuTime = time);
-      _saveFormData();
-    },
-    onStartTimeChanged: (time) {
-      setState(() => _startTime = time);
-      _saveFormData();
-    },
-    onEndTimeChanged: (time) {
-      setState(() => _endTime = time);
-      _saveFormData();
-    },
-    onDcuImageChanged: (path) {
-      setState(() => _dcuImagePath = path);
-      _saveFormData();
-    },
-    onStartImageChanged: (path) {
-      setState(() => _startImagePath = path);
-      _saveFormData();
-    },
-    onEndImageChanged: (path) {
-      setState(() => _endImagePath = path);
-      _saveFormData();
-    },
-  );
 
   // Replace the _buildStep1 method with this:
   Widget _buildStep1() => SpkStep(

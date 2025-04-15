@@ -1,8 +1,10 @@
 
+import 'package:intl/intl.dart';
+
 class FormatHelpers {
   static String formatDate(String dateString) {
     final date = DateTime.parse(dateString);
-    return '${date.day}/${date.month}/${date.year}';
+    return DateFormat('EEEE d MMMM yyyy', 'id_ID').format(date); // Specify 'en_US' for English
   }
 
   static String formatCurrency(dynamic amount) {

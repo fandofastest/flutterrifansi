@@ -1,17 +1,43 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutterrifansi/presentation/home/controllers/home_controller.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import '../../../core/services/api_service.dart';
 import '../../../data/models/user_model.dart';
 
 class AuthController extends GetxController {
-  final ApiService _apiService = Get.find();
+  late final ApiService _apiService;
   final GetStorage _storage = GetStorage();
 
   final RxBool isLoading = false.obs;
   final Rx<UserModel?> user = Rx<UserModel?>(null);
 
+  @override
+  void onInit() {
+    super.onInit();
+    // Initialize ApiService here instead of using Get.find()
+    _apiService = Get.put(ApiService());
+    Get.put(HomeController());
+    // Load user data if available
+    _loadUserData();
+  }
+
+  // Add method to load user data from storage
+  void _loadUserData() {
+    try {
+      final userData = _storage.read('user_data');
+      if (userData != null) {
+        final Map<String, dynamic> userMap = json.decode(userData);
+        user.value = UserModel.fromJson(userMap);
+        print('User data loaded from storage: ${user.value?.name}');
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+    }
+  }
+  
   Future<void> login(String username, String password) async {
     try {
       print('Login started for user: $username');
@@ -30,6 +56,8 @@ class AuthController extends GetxController {
           if (responseBody['user'] != null) {
             user.value = UserModel.fromJson(responseBody['user']);
             _storage.write('token', responseBody['token']);
+            // Store user data in storage
+            _storage.write('user_data', json.encode(responseBody['user']));
             Get.offAllNamed('/home');
           } else {
             throw Exception('User data is null');
@@ -41,6 +69,7 @@ class AuthController extends GetxController {
         final errorMessage = response.body is Map ? 
           response.body['message'] ?? 'Login failed' : 'Login failed';
         print('Login failed: $errorMessage');
+        print('Response body: ${response.body}');
         Get.snackbar('Error', errorMessage.toString());
       }
     } catch (e) {
@@ -54,6 +83,7 @@ class AuthController extends GetxController {
 
   void logout() {
     _storage.remove('token');
+    _storage.remove('user_data');
     user.value = null;
     Get.offAllNamed('/login');
   }

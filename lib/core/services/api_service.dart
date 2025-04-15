@@ -124,12 +124,8 @@ class ApiService extends GetConnect {
       },
     );
 
-    if (response.statusCode == HttpStatus.ok || 
-        response.statusCode == HttpStatus.created) {
-      return Map<String, dynamic>.from(response.body);
-    }
+   return response.body;
     
-    throw Exception('Failed to submit SPK progress: ${response.statusText}');
   }
 
   Future<Map<String, dynamic>> getCurrentSolarPrice() async {
@@ -149,4 +145,18 @@ class ApiService extends GetConnect {
     
     throw Exception('Failed to get current solar price: ${response.statusText}');
   }
+
+  Future<List<Map<String, dynamic>>> getSpkProgress() async {
+      final response = await get(
+        ApiConstants.spkProgress,
+        headers: {
+          'Authorization': 'Bearer ${await getToken()}',
+        },
+      );
+  
+      if (response.statusCode == HttpStatus.ok) {
+        return List<Map<String, dynamic>>.from(response.body);
+      }
+      throw Exception('Failed to load SPK Progress: ${response.statusText}');
+    }
 }

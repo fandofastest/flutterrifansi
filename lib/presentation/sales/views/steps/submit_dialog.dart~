@@ -1,0 +1,267 @@
+import 'dart:math';
+import 'package:flutter/material.dart';
+import 'package:flutterrifansi/core/models/spk_details.dart';
+import 'package:flutterrifansi/core/utils/format_helpers.dart';
+
+class SubmitDialog extends StatelessWidget {
+  final SpkDetails spkDetails;
+  final List<Map<String, dynamic>> selectedItems;
+  final Map<String, dynamic>? taskFormData;
+  final Function(Map<String, dynamic>) onSubmit;
+
+  const SubmitDialog({
+    Key? key,
+    required this.spkDetails,
+    required this.selectedItems,
+    this.taskFormData,
+    required this.onSubmit,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Calculate totals for summary
+    double totalSpentToday = selectedItems.fold(0, (sum, item) {
+      return sum + ((item['quantity'] ?? 0) * (item['item']['rate'] ?? 0));
+    });
+    
+    // Calculate costs from task form data
+    List<Map<String, dynamic>> costItems = [];
+    double totalCost = 0;
+    
+    if (taskFormData != null && taskFormData!['costUsed'] != null) {
+      final costUsed = taskFormData!['costUsed'];
+      
+      for (var cost in costUsed) {
+        double amount = 0;
+        String type = '';
+        String description = '';
+        
+        if (cost['details'] != null) {
+          if (cost['details']['manpower'] != null) {
+            final manpower = cost['details']['manpower'];
+            amount = (manpower['jumlahOrang'] ?? 0) * (manpower['jamKerja'] ?? 0) * (manpower['costPerHour'] ?? 0);
+            type = 'Manpower';
+            description = cost['itemCost'] ?? 'Unknown Manpower';
+          } else if (cost['details']['equipment'] != null) {
+            final equipment = cost['details']['equipment'];
+            amount = (equipment['jumlahUnit'] ?? 0) * (equipment['jamKerja'] ?? 0) * (equipment['costPerHour'] ?? 0);
+            if (equipment['fuelUsage'] != null && equipment['fuelPrice'] != null) {
+              amount += (equipment['fuelUsage'] ?? 0) * (equipment['fuelPrice'] ?? 0);
+            }
+            type = 'Equipment';
+            description = cost['itemCost'] ?? 'Unknown Equipment';
+          } else if (cost['details']['material'] != null) {
+            final material = cost['details']['material'];
+            amount = (material['jumlahUnit'] ?? 0) * (material['pricePerUnit'] ?? 0);
+            type = 'Material';
+            description = cost['itemCost'] ?? 'Unknown Material';
+          } else if (cost['details']['security'] != null) {
+            final security = cost['details']['security'];
+            amount = (security['jumlahOrang'] ?? 0) * (security['dailyCost'] ?? 0);
+            type = 'Security';
+            description = cost['itemCost'] ?? 'Unknown Security';
+          }
+        }
+        
+        totalCost += amount;
+        costItems.add({
+          'type': type,
+          'description': description,
+          'amount': amount,
+        });
+      }
+    }
+
+    return Dialog(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        width: min(MediaQuery.of(context).size.width * 0.9, 500),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Submit Progress',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // SPK Info
+                    Text('SPK: ${spkDetails.spkNo}',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    
+                    // Selected Items Summary
+                    const Text(
+                      'Sales',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    ...selectedItems.map((item) {
+                      double itemTotalPrice = (item['quantity'] ?? 0) * (item['item']['rate'] ?? 0);
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item['item']['description'],
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text('Quantity: ${item['quantity'] ?? 0}'),
+                            Text('Rate: Rp ${FormatHelpers.formatCurrency(item['item']['rate'] ?? 0)}'),
+                            Text('Total: Rp ${FormatHelpers.formatCurrency(itemTotalPrice)}'),
+                            const Divider(),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    
+                    // Cost Items Summary (if available)
+                    if (costItems.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Cost',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      ...costItems.map((cost) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: cost['type'] == 'Manpower' ? Colors.blue[100] : Colors.orange[100],
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      cost['type'],
+                                      style: TextStyle(
+                                        color: cost['type'] == 'Manpower' ? Colors.blue[800] : Colors.orange[800],
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      cost['description'],
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Text('Quantity: ${cost['quantity']}'),
+                              Text('Rate: Rp ${FormatHelpers.formatCurrency(cost['rate'])}'),
+                              Text('Total: Rp ${FormatHelpers.formatCurrency(cost['amount'])}'),
+                              const Divider(),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                    
+                    // Grand Total
+                    const SizedBox(height: 16),
+                    ListTile(
+                      title: const Text('Sales Total', style: TextStyle(fontWeight: FontWeight.bold)),
+                      trailing: Text(
+                        'Rp ${FormatHelpers.formatCurrency(totalSpentToday)}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ),
+                    
+                    if (costItems.isNotEmpty)
+                      ListTile(
+                        title: const Text('Cost Total', style: TextStyle(fontWeight: FontWeight.bold)),
+                        trailing: Text(
+                          'Rp ${FormatHelpers.formatCurrency(totalCost)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                      ),
+                      
+                    if (costItems.isNotEmpty)
+                      ListTile(
+                        title: const Text('Profit', style: TextStyle(fontWeight: FontWeight.bold)),
+                        trailing: Text(
+                          'Rp ${FormatHelpers.formatCurrency(totalSpentToday - totalCost)}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold, 
+                            fontSize: 16,
+                            color: (totalSpentToday - totalCost) >= 0 ? Colors.green : Colors.red,
+                          ),
+                        ),
+                      ),
+                    
+                    // Project Progress
+                    const SizedBox(height: 16),
+                    Text(
+                      'Daily Target',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: (spkDetails.totalAmount) > 0 
+                          ? totalSpentToday / (spkDetails.totalAmount) 
+                          : 0,
+                      minHeight: 10,
+                      backgroundColor: Colors.grey[300],
+                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFBF4D00)),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Progress: ${((spkDetails.totalAmount) > 0 
+                          ? (totalSpentToday / (spkDetails.totalAmount/spkDetails.projectDuration)) * 100
+                          : 0).toStringAsFixed(2)}%',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: () {
+                    final formattedData = {
+                      'spk': spkDetails.id,
+                      'selectedItems': selectedItems,
+                      'taskFormData': taskFormData,
+                    };
+                    onSubmit(formattedData);
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFBF4D00),
+                  ),
+                  child: const Text('Submit', style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -1,5 +1,4 @@
 class ApiConstants {
-  static const String mainurl = 'https://localhost3000.fando.id';
   static const String baseUrl = 'https://localhost3000.fando.id/api';
   static const String login = '/auth/login';
   static const String spk = '/spks';
@@ -8,8 +7,4 @@ class ApiConstants {
   static const String itemsByCategory = '/items/category';
     static const String spkProgress = '/spk-progress';
     static const String solarPrice = '/solar-prices/current-price';
-      static const String uploadEndpoint = '$baseUrl/upload/upload';
-  
-  // Image URLs
-  static const String imageBaseUrl = baseUrl;
 }

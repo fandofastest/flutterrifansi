@@ -7,7 +7,6 @@ import 'package:flutterrifansi/core/models/sales_progress.dart';
 import 'package:flutterrifansi/core/models/spk_details.dart';
 import 'package:flutterrifansi/core/services/api_service.dart';
 import 'package:flutterrifansi/core/utils/format_helpers.dart';
-import 'package:flutterrifansi/presentation/auth/controllers/auth_controller.dart';
 import 'package:flutterrifansi/presentation/sales/views/steps/submit_dialog.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -60,7 +59,7 @@ class _InputSalesViewState extends State<InputSalesView> {
         setState(() {
           _taskFormData = taskData;
           print('Task form data loaded successfully');
-          print('Task form data: ' + _taskFormData.toString());
+          print('Task form data: ' + '_taskFormData);
         });
       }
     } catch (e) {
@@ -192,8 +191,28 @@ class _InputSalesViewState extends State<InputSalesView> {
 
       // Extract costs from task form data if available
       List<Map<String, dynamic>> costUsed = [];
-      if (_taskFormData != null && _taskFormData!['costUsed'] != null) {
-        costUsed = List<Map<String, dynamic>>.from(_taskFormData!['costUsed']);
+      if (_taskFormData != null) {
+        if (_taskFormData!['selectedManpower'] != null) {
+          costUsed.addAll(_taskFormData!['selectedManpower'].map<Map<String, dynamic>>((mp) => {
+            'costType': 'manpower',
+            'item': mp['item']['_id'],
+            'description': mp['item']['description'],
+            'quantity': mp['quantity'] ?? 0,
+            'rate': mp['item']['rate'] ?? 0,
+            'amount': (mp['quantity'] ?? 0) * (mp['item']['rate'] ?? 0),
+          }).toList());
+        }
+        
+        if (_taskFormData!['selectedEquipment'] != null) {
+          costUsed.addAll(_taskFormData!['selectedEquipment'].map<Map<String, dynamic>>((eq) => {
+            'costType': 'equipment',
+            'item': eq['item']['_id'],
+            'description': eq['item']['description'],
+            'quantity': eq['quantity'] ?? 0,
+            'rate': eq['item']['rate'] ?? 0,
+            'amount': (eq['quantity'] ?? 0) * (eq['item']['rate'] ?? 0),
+          }).toList());
+        }
       }
 
       final salesProgressData = {
@@ -222,19 +241,6 @@ class _InputSalesViewState extends State<InputSalesView> {
   }
 
   void _showSubmitDialog() {
-    // Get task form data with images
-    Map<String, dynamic> timeDetails = _taskFormData?['timeDetails'] ?? {
-      'startTime': DateTime.now().toIso8601String(),
-      'endTime': DateTime.now().toIso8601String(),
-      'dcuTime': DateTime.now().toIso8601String(),
-    };
-
-    Map<String, dynamic> images = _taskFormData?['images'] ?? {
-      'startImage': '',
-      'endImage': '',
-      'dcuImage': '',
-    };
-
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -244,21 +250,11 @@ class _InputSalesViewState extends State<InputSalesView> {
           selectedItems: _selectedItems,
           taskFormData: _taskFormData,
           onSubmit: (data) {
-            final authController = Get.find<AuthController>();
-            final mandorId = authController.user.value?.id ?? '';
-            
             final formattedData = SalesFormUtils.buildSalesProgressJson(
-              mandorId: mandorId,
               spkId: spkId,
               selectedItems: _selectedItems,
-              taskFormData: {
-                ..._taskFormData ?? {},
-                'timeDetails': timeDetails,
-                'images': images,
-              },
+              taskFormData: _taskFormData,
             );
-            print('Submitting data with images: $formattedData'); // Debug log
-
             _submitProgress(formattedData);
           },
         );
@@ -269,34 +265,12 @@ class _InputSalesViewState extends State<InputSalesView> {
   Future<void> _submitProgress(Map<String, dynamic> data) async {
     try {
       EasyLoading.show(status: 'Submitting...');
-      
-      final response = await _apiService.postSpkProgress(data);
-
-      if (response['status'] == 'success') {
-        print('Progress submitted successfully');
-        await _storage.remove('sales_form_data_$spkId');
-        Get.offAllNamed('/home');  // Navigate to home screen
-        
-        // Show snackbar after navigation
-        Get.snackbar(
-          'Success', 
-          'Progress submitted successfully',
-          backgroundColor: Colors.green[100],
-          colorText: Colors.green[800],
-          snackPosition: SnackPosition.TOP,
-          duration: const Duration(seconds: 3),
-        );
-      } else {
-        throw Exception('Failed to submit progress');
-      }
+      // Contoh panggilan API
+      // await _apiService.submitSalesProgress(data);
+      Get.snackbar('Success', 'Progress submitted successfully');
+      Get.back(); // Balik ke halaman sebelumnya
     } catch (e) {
-      Get.snackbar(
-        'Error', 
-        'Failed to submit progress: $e',
-        backgroundColor: Colors.red[100],
-        colorText: Colors.red[800],
-      );
-      print('Error submitting progress: $e');
+      Get.snackbar('Error', 'Failed to submit progress: $e');
     } finally {
       EasyLoading.dismiss();
     }

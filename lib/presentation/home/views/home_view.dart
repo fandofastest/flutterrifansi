@@ -1,23 +1,51 @@
 import 'package:flutter/material.dart';
+import 'package:flutterrifansi/presentation/home/controllers/home_controller.dart';
 import 'package:get/get.dart';
 import '../../auth/controllers/auth_controller.dart';
+import '../controllers/home_controller.dart';
+import '../widgets/task_list_item.dart';
+import '../widgets/progress_list_item.dart';
 
 class HomeView extends StatelessWidget {
-  const HomeView({super.key});
+  HomeView({super.key}) {
+    Get.put(HomeController());
+  }
+
+  // Helper method to format role string
+  String _formatRole(String role) {
+    // Convert snake_case or camelCase to Title Case with spaces
+    String formatted = role.replaceAllMapped(
+      RegExp(r'([a-z])([A-Z])'),
+      (match) => '${match.group(1)} ${match.group(2)}',
+    );
+    
+    // Replace underscores with spaces
+    formatted = formatted.replaceAll('_', ' ');
+    
+    // Capitalize each word
+    formatted = formatted.split(' ').map((word) {
+      if (word.isNotEmpty) {
+        return word[0].toUpperCase() + word.substring(1).toLowerCase();
+      }
+      return word;
+    }).join(' ');
+    
+    return formatted;
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Initialize the controller if not already initialized
-    // final authController = Get.put(AuthController());
-
+    final authController = Get.find<AuthController>();
+    final homeController = Get.find<HomeController>();
+    
     return Scaffold(
       body: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFFBF4D00),
-              borderRadius: const BorderRadius.only(
+            decoration: const BoxDecoration(
+              color: Color(0xFFBF4D00),
+              borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(30),
                 bottomRight: Radius.circular(30),
               ),
@@ -29,30 +57,36 @@ class HomeView extends StatelessWidget {
                     children: [
                       const CircleAvatar(
                         radius: 30,
-                        backgroundImage: AssetImage('assets/images/profile.png'),
+                        child: Icon(Icons.person_2_outlined, color: Color(0xFFBF4D00)),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Welcome Xavier Neuman',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                        child: Obx(() {
+                          // Get user data reactively
+                          final user = authController.user.value;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Welcome ${user?.name ?? 'User'}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            Text(
-                              'Good Morning',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontSize: 14,
+                              Text(
+                                user?.role != null 
+                                    ? _formatRole(user!.role) 
+                                    : 'Loading...',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 14,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          );
+                        }),
                       ),
                     ],
                   ),
@@ -60,7 +94,10 @@ class HomeView extends StatelessWidget {
               ),
             ),
           ),
-          Padding(
+          Expanded(child: SingleChildScrollView(
+            child: Column(
+              children: [
+                Padding(
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,85 +110,41 @@ class HomeView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: 3, // Sample count
-                  itemBuilder: (context, index) {
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'SPK-${2023001 + index}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFBF4D00).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: const Text(
-                                    'In Progress',
-                                    style: TextStyle(
-                                      color: Color(0xFFBF4D00),
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Project ${index + 1}',
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.calendar_today,
-                                  size: 16,
-                                  color: Colors.grey,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Due: ${DateTime.now().add(Duration(days: index + 1)).toString().substring(0, 10)}',
-                                  style: const TextStyle(
-                                    color: Colors.grey,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                Obx(() {
+                  if (homeController.isLoading.value) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: homeController.spkList.length,
+                    itemBuilder: (context, index) => TaskListItem(
+                      spk: homeController.spkList[index],
+                    ),
+                  );
+                }),
+                const SizedBox(height: 16),
+                Obx(() {
+                  if (homeController.isLoading.value) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: homeController.progressList.length,
+                    itemBuilder: (context, index) => ProgressListItem(
+                      progress: homeController.progressList[index],
+                    ),
+                  );
+                }),
               ],
             ),
           ),
+              ],
+            ),
+          ))
         ],
       ),
       floatingActionButton: FloatingActionButton(
