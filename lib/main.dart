@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:flutterrifansi/core/services/api_service.dart';
 import 'package:get/get.dart';
 import 'routes/app_pages.dart';
 import 'package:intl/date_symbol_data_local.dart';
 void main() async {
   await initializeDateFormatting('id_ID', null); // 
+      Get.put(ApiService());
+
   runApp(const MyApp());
 }
 

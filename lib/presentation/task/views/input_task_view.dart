@@ -62,7 +62,8 @@ class _InputTaskViewState extends State<InputTaskView> {
     super.initState();
     EasyLoading.show(status: 'loading...');
 
-    _apiService = Get.put(ApiService());
+      _apiService = Get.find<ApiService>();
+
     _initializeData();
   }
 

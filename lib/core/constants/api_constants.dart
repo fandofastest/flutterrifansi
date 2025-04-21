@@ -1,6 +1,6 @@
 class ApiConstants {
-  static const String mainurl = 'https://localhost3000.fando.id';
-  static const String baseUrl = 'https://localhost3000.fando.id/api';
+  static const String mainurl = 'https://berifansi.fando.id';
+  static const String baseUrl = 'https://berifansi.fando.id/api';
   static const String login = '/auth/login';
   static const String spk = '/spks';
   static const String itemCostsByCategory = '/item-costs/category'; // Added this line

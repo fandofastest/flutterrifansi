@@ -16,12 +16,12 @@ class SplashView extends StatelessWidget {
             children: [
               const Spacer(),
               Image.asset(
-                'assets/images/task_illustration.png',
+                'assets/images/logo.png',
                 height: 100,
               ),
               const SizedBox(height: 48),
               const Text(
-                'Rifansi System Task ',
+                'Rifansi Task Management ',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,

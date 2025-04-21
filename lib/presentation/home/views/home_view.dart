@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutterrifansi/presentation/home/controllers/home_controller.dart';
 import 'package:get/get.dart';
 import '../../auth/controllers/auth_controller.dart';
-import '../controllers/home_controller.dart';
 import '../widgets/task_list_item.dart';
 import '../widgets/progress_list_item.dart';
 
@@ -103,7 +102,7 @@ class HomeView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Task List',
+                  'SPK List',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -124,12 +123,27 @@ class HomeView extends StatelessWidget {
                     ),
                   );
                 }),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24), // Add more space between the lists
+                const Text( // Add the title for the progress list
+                  'SPK Progress List',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 Obx(() {
                   if (homeController.isLoading.value) {
                     return const Center(child: CircularProgressIndicator());
                   }
-                  
+                  // Add check for empty progress list
+                  if (homeController.progressList.isEmpty) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                        child: Text('No progress entries found.'),
+                      ),
+                    );
+                  }
                   return ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),

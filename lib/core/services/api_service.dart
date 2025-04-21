@@ -159,4 +159,17 @@ class ApiService extends GetConnect {
       }
       throw Exception('Failed to load SPK Progress: ${response.statusText}');
     }
+
+  Future<List<Map<String, dynamic>>> getSpkProgressBySpkId(String spkId) async {
+    final response = await get(
+      '${ApiConstants.spkProgress}/spk/$spkId',
+      headers: {
+        'Authorization': 'Bearer ${await getToken()}',
+      },
+    );
+    if (response.statusCode == HttpStatus.ok) {
+      return List<Map<String, dynamic>>.from(response.body);
+    }
+    throw Exception('Failed to load SPK Progress by SPK ID: ${response.statusText}');
+  }
 }
